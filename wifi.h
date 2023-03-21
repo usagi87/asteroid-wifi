@@ -14,7 +14,8 @@ public:
 	
 	Q_INVOKABLE bool wifiStatus();
 	
-	Q_INVOKABLE QString wifiConnect(QString ssid, QString password);
+	Q_INVOKABLE bool wifiConnect(QString ssid, QString password);
+	Q_INVOKABLE bool wifiConnectStatus();
 
 private:
 

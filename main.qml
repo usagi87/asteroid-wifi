@@ -29,13 +29,13 @@ Application {
     centerColor: "#b04d1c"
     outerColor: "#421c0a"
 
-	property int indexI : 0	
+	property int ssid : 0	
 	property var db : ""
  	property var datasize : 0 
  	property var database:[]
  	property var status : wifi.wifiStatus()
-
-
+ 	property var connectStatus: wifi.wifiConnectStatus()
+ 	
 Wifi{
  		id:wifi
  	}
@@ -83,7 +83,7 @@ Component {
         }
 		iconName: "ios-add-circle-outline"
 		onClicked: { 
- 			indexI = wifiList.currentIndex	
+ 			ssid = wifiList.currentIndex	
  			layerStack.push(passwordPage)
  		}
 	}
@@ -114,15 +114,23 @@ Component {
         anchors.top :  wifiIcon.bottom
         textFormat: Text.RichText
         text: status ? "Wifi ON" : "Wifi OFF"
-        font.pixelSize: Dims.h(8) 
+        font.pixelSize: Dims.h(10) 
     	horizontalAlignment: Text.AlignHCenter
 	}
-        
+     Label {
+       	id: wifiConnectState
+       	anchors.horizontalCenter: parent.horizontalCenter 
+        anchors.top :  wifiStatus.bottom
+        textFormat: Text.RichText
+        text: connectStatus ? "Connected" : "Not connected"
+        font.pixelSize: Dims.h(8) 
+    	horizontalAlignment: Text.AlignHCenter
+	}   
 	IconButton {
 		width: Dims.l(25)
     	height: width
 		anchors.horizontalCenter: parent.horizontalCenter
-		anchors.top : wifiStatus.bottom
+		anchors.top : wifiConnectState.bottom
 		iconName: "ios-add-circle-outline"
 		onClicked: { 
  			db = wifi.wifiScan()
@@ -138,22 +146,24 @@ Component{
 	id:passwordPage
 	Item{
 		TextField {
-			id: lockField
+			id: passwdField
 			anchors.horizontalCenter : parent.horizontalCenter
 			anchors.verticalCenter : parent.verticalCenter
 			width: Dims.w(80)
 			previewText: qsTrId("Password")
-			
 			inputMethodHints: Qt.ImhNumbersOnly & Qt.ImhUppercaseOnly  //Qt::ImhLatinOnly
 		}
 		HandWritingKeyboard {
 				anchors.fill: parent
 		}
 		IconButton {
- 		anchors.bottom : parent.bottom
- 		anchors.horizontalCenter : parent.horizontalCenter		
- 		iconName: "ios-checkmark-circle-outline"
- 		onClicked: {}
+ 			anchors.bottom : parent.bottom
+ 			anchors.horizontalCenter : parent.horizontalCenter		
+ 			iconName: "ios-checkmark-circle-outline"
+ 			onClicked: {
+ 				wifi.wifiConnect(database[ssid],passwdField.text)
+ 				layerStack.pop(statusPage)
+ 			}
 		}
 	}
 }

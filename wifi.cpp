@@ -83,7 +83,30 @@ bool Wifi::wifiStatus(){
 	}	
 }
 
-QString Wifi::wifiConnect(QString ssid, QString password){
+bool Wifi::wifiConnectStatus(){
+	QProcess process;
+    process.setProgram("connmanctl");
+    process.setArguments({"technologies"});
+    process.start();
+    process.waitForFinished();
+    
+    QString output = QString::fromUtf8(process.readAllStandardOutput());
+    int i = output.indexOf("/net/connman/technology/wifi");
+    int len = output.indexOf("/net/connman/technology/bluetooth") - i;
+    QString wifiInfo = output.mid(i,len);
+        
+    if(wifiInfo.contains("Connected = False")) {
+    	qDebug() << "false";
+    	return false;
+    } else {
+    	return true;
+    }
+    
+    return false;
+
+}
+
+bool Wifi::wifiConnect(QString ssid, QString password){
 	
 	QProcess process;
     process.setProgram("connmanctl");
@@ -116,7 +139,14 @@ QString Wifi::wifiConnect(QString ssid, QString password){
     qDebug() << "Output:" << output;
     
     process.close();
-	return output;
+	
+	if (wifiConnectStatus() == false) {
+		return false;
+	} else {
+		return true;
+	}
+	
+	return false;
         
 }    
 
