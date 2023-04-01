@@ -147,10 +147,8 @@ Component{
 	UserAgent {
         id: userAgent
         onUserInputRequested: {
-            var view = {
-                "fields": []
-            };
-            for (var key in fields) {
+            var view = {"fields": []};
+        	for (var key in fields) {
                 view.fields.push({
                 	"name": key,
                     "id": key.toLowerCase(),
@@ -182,8 +180,10 @@ Component{
 			MouseArea {
         		anchors.fill: parent
         		onClicked: {
-        			layerStack.push(passwordPage)
-					//modelData.requestConnect()         		
+       				if(modelData.security == "psk"){
+       					layerStack.push(passwordPage)
+       				} 		
+        			        		
          		}
         	}
 		}
