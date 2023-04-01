@@ -15,12 +15,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <QQmlEngine>
-#include <wifi.h>
 #include <asteroidapp.h>
 
 int main(int argc, char *argv[])
 {
-    qmlRegisterType<Wifi>("Wifi", 1, 0, "Wifi");
+    
     return AsteroidApp::main(argc, argv);
 }

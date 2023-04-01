@@ -20,8 +20,8 @@ import org.asteroid.controls 1.0
 import org.asteroid.utils 1.0
 import QtQuick.VirtualKeyboard 2.0
 import QtQuick.VirtualKeyboard.Settings 2.15
+import Connman 0.2
 
-import Wifi 1.0
 
 Application {
     id: app
@@ -29,71 +29,37 @@ Application {
     centerColor: "#b04d1c"
     outerColor: "#421c0a"
 
-	property int ssid : 0	
-	property var db : ""
- 	property var datasize : 0 
- 	property var database:[]
- 	property var status : wifi.wifiStatus()
- 	property var connectStatus: wifi.wifiConnectStatus()
+property var passphrase : ""
  	
-Wifi{
- 		id:wifi
- 	}
 
-
- 	
-function readData() {
-		database = []
-	   	var list = db.split(";")
-	   	var len = list.length-1
-	   	var x = 0;
-		for (var j = 0; j < len; ++j) {
-			var tmp = list[j].split(":");
-			database.push({"name":tmp[0], "address":tmp[1]})  			
-		}   	
-		datasize = database.length
-		
-	} 	
     
 LayerStack {
-   		id: layerStack
-		firstPage: statusPage
-
-	}    
+   	id: layerStack
+	firstPage: wifiStatusPage
+}    
     
 Component {
-	id:scanPage
-	Item {	
-    Spinner {
- 		id: wifiList
-		anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: Dims.h(60)
-		model: datasize
-		delegate: SpinnerDelegate { text: database[index].name}
-	}
-	IconButton {
-		width: Dims.l(30)
-    	height: width
-		anchors { 
-            bottom: parent.bottom
-            horizontalCenter: parent.horizontalCenter
-            bottomMargin: Dims.iconButtonMargin
-        }
-		iconName: "ios-add-circle-outline"
-		onClicked: { 
- 			ssid = wifiList.currentIndex	
- 			layerStack.push(passwordPage)
- 		}
-	}
+	id: wifiStatusPage
+	Item{
+	id:rootM
+	
+	TechnologyModel {
+		id: wifiModel
+    	name: "wifi"
+    	onCountChanged: {
+    		console.log("COUNT CHANGE " + count)
+    	}	
+    	onScanRequestFinished: {
+    		console.log("SCAN FINISH")
+    		
+    	}	
 	}
 
-}
+	NetworkTechnology {
+		id: wifiStatus
+    	path: "/net/connman/technology/wifi"
+	}
 	
-Component {
-	id:statusPage
-	Item{
 	IconButton {
 		id: wifiIcon
 		width: Dims.l(30)
@@ -101,28 +67,27 @@ Component {
 		anchors.horizontalCenter: parent.horizontalCenter
 		anchors.top : parent.top
 		iconName: "ios-wifi"
-		opacity: status ? 0.8 : 0.2
+		opacity: wifiStatus.powered  ? 0.8 : 0.2
 		onClicked:{
-       		status = !status
-        	wifi.wifiEnable(status) 
+        	 wifiStatus.powered = !wifiStatus.powered
         }
 	}
 	
 	Label {
-       	id: wifiStatus 
+       	id: wifiState 
        	anchors.horizontalCenter: parent.horizontalCenter 
         anchors.top :  wifiIcon.bottom
         textFormat: Text.RichText
-        text: status ? "Wifi ON" : "Wifi OFF"
+        text: wifiStatus.powered ? "Wifi ON" : "Wifi OFF"
         font.pixelSize: Dims.h(10) 
     	horizontalAlignment: Text.AlignHCenter
 	}
      Label {
        	id: wifiConnectState
        	anchors.horizontalCenter: parent.horizontalCenter 
-        anchors.top :  wifiStatus.bottom
+        anchors.top :  wifiState.bottom
         textFormat: Text.RichText
-        text: connectStatus ? "Connected" : "Not connected"
+        text: wifiStatus.connected ? "Connected" : "Not connected"
         font.pixelSize: Dims.h(8) 
     	horizontalAlignment: Text.AlignHCenter
 	}   
@@ -132,26 +97,26 @@ Component {
 		anchors.horizontalCenter: parent.horizontalCenter
 		anchors.top : wifiConnectState.bottom
 		iconName: "ios-add-circle-outline"
-		onClicked: { 
- 			db = wifi.wifiScan()
- 			readData()		
- 			layerStack.push(scanPage)
+		onClicked: {		
+			layerStack.push(wifiSettingsPage)
  		}
 	}
 	
 	}	
-	}
+}
 	
 Component{
 	id:passwordPage
 	Item{
+	id:rootM
 		TextField {
 			id: passwdField
 			anchors.horizontalCenter : parent.horizontalCenter
 			anchors.verticalCenter : parent.verticalCenter
 			width: Dims.w(80)
+			
 			previewText: qsTrId("Password")
-			inputMethodHints: Qt.ImhNumbersOnly & Qt.ImhUppercaseOnly  //Qt::ImhLatinOnly
+			inputMethodHints: Qt.ImhLowercaseOnly//Qt.ImhNumbersOnly & Qt.ImhUppercaseOnly  //Qt::ImhLatinOnly
 		}
 		HandWritingKeyboard {
 				anchors.fill: parent
@@ -161,15 +126,88 @@ Component{
  			anchors.horizontalCenter : parent.horizontalCenter		
  			iconName: "ios-checkmark-circle-outline"
  			onClicked: {
- 				wifi.wifiConnect(database[ssid],passwdField.text)
- 				layerStack.pop(statusPage)
+ 				passphrase = passwdField.text
+ 				layerStack.pop(rootM)
  			}
 		}
 	}
 }
+
+Component{
+	id: wifiSettingsPage
+    Item {
+    id: rootM
+	
+	TechnologyModel {
+    	id: wifiModel
+    	name: "wifi"
+	}
+	
+	//Part of code from * 
+	UserAgent {
+        id: userAgent
+        onUserInputRequested: {
+            var view = {
+                "fields": []
+            };
+            for (var key in fields) {
+                view.fields.push({
+                	"name": key,
+                    "id": key.toLowerCase(),
+                    "type": fields[key]["Type"],
+                    "requirement": fields[key]["Requirement"]
+			});
+            console.log(key + ":");
+            for (var inkey in fields[key]) {
+            	console.log("    " + inkey + ": " + fields[key][inkey]);
+            }
+            }
+            userAgent.sendUserReply({"Passphrase": passphrase})
+        }
+
+        onErrorReported: {
+            console.log("Got error from model: " + error);
+        }
+    }
+	
+	Spinner {
+ 		id: wifiList
+		anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        height: Dims.h(60)
+		model: wifiModel
+		delegate: SpinnerDelegate { 
+			text: modelData.name
+			MouseArea {
+        		anchors.fill: parent
+        		onClicked: {
+        			layerStack.push(passwordPage)
+					//modelData.requestConnect()         		
+         		}
+        	}
+		}
+	}	
 	
 	
+	
+	IconButton {
+	 	anchors.top : wifiList.bottom
+	 	anchors.horizontalCenter : parent.horizontalCenter		
+	 	iconName: "ios-checkmark-circle-outline"
+	 	onClicked: {
+	       	wifiModel.get(wifiList.currentIndex).requestConnect()
+	    }
+	}
+}
 }
 
-    
-	
+}
+
+
+
+
+
+
+//*https://raw.githubusercontent.com/nemomobile-ux/glacier-settings/e989b473629e1290ab55f57f166bf36462e99117/src/plugins/wifi/WifiSettings.qml
+
