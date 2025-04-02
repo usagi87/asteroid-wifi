@@ -1,8 +1,7 @@
 [Desktop Entry]
 Type=Application
 Categories=Applications;
-Exec=invoker --single-instance --type=qtcomponents-qt5 /usr/bin/asteroid-wifi
-Icon=ios-wifi
+Exec=asteroid-wifi
+Icon=ios-wifi-outline
 X-Asteroid-Center-Color=#b04d1c
 X-Asteroid-Outer-Color=#421c0a
-Name=Wifi
